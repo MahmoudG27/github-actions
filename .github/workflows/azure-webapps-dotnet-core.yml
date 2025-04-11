@@ -20,16 +20,11 @@
 name: Build and deploy ASP.Net Core app to an Azure Web App
 
 env:
-  AZURE_WEBAPP_NAME: klayytech    # set this to the name of your Azure Web App
-  DOTNET_VERSION: '8'                 # set this to the .NET Core version to use
+  AZURE_WEBAPP_NAME: klayytech
+  DOTNET_VERSION: '8'
 
 on:
-  push:
-    branches: none
   workflow_dispatch:
-
-# permissions:
-#   contents: read
 
 jobs:
   build:
@@ -47,7 +42,7 @@ jobs:
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
 
-      - name: Set up dependency caching for faster builds
+      - name: Cache NuGet packages
         uses: actions/cache@v3
         with:
           path: ~/.nuget/packages
@@ -58,40 +53,36 @@ jobs:
       - name: Build with dotnet
         run: dotnet build --configuration Release
 
-      - name: dotnet publish
-        run: dotnet publish -c Release -o ${{env.DOTNET_ROOT}}/myapp
+      - name: Publish .NET app
+        run: dotnet publish -c Release -o ./publish
 
-      - name: Upload artifact for deployment job
+      - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: .net-app
-          path: ${{env.DOTNET_ROOT}}/myapp
+          path: ./publish
 
   deploy:
-    # permissions:
-    #   contents: none
     runs-on: self-hosted
     needs: build
     environment:
       name: 'Development'
-      url: https://klayytech.azurewebsites.net
+      url: https://${{ env.AZURE_WEBAPP_NAME }}.azurewebsites.net
 
     steps:
-      - name: Download artifact from build job
+      - name: Download artifact
         uses: actions/download-artifact@v4
         with:
           name: .net-app
-          
+
       - name: Azure Login
         uses: azure/login@v1
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
-      
+
       - name: Deploy to Azure Web App
         id: deploy-to-webapp
         uses: azure/webapps-deploy@v2
         with:
           app-name: ${{ env.AZURE_WEBAPP_NAME }}
-          # publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
-          package: ./myapp
-          # package: ${{ env.AZURE_WEBAPP_PACKAGE_PATH }}
+          package: .
