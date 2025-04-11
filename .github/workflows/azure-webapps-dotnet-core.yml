@@ -33,7 +33,7 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
 
     defaults:
       run:
@@ -70,7 +70,7 @@ jobs:
   deploy:
     # permissions:
     #   contents: none
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     needs: build
     environment:
       name: 'Development'
